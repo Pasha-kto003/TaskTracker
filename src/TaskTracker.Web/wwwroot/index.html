@@ -1,0 +1,360 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Task Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23fde047%22 stroke=%22%23000%22 stroke-width=%226%22/><text x=%2250%22 y=%2270%22 font-size=%2260%22 text-anchor=%22middle%22 font-family=%22system-ui%22 font-weight=%22900%22>✓</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+            tailwind.config = {
+              theme: {
+                extend: {
+                  colors: {
+                    cream:  '#fef7e8',
+                    ink:    '#0a0a0a',
+                    paper:  '#ffffff',
+                    yel:    '#fde047',
+                    pink:   '#f0abfc',
+                    mint:   '#86efac',
+                    coral:  '#fb7185',
+                    sky:    '#7dd3fc',
+                    lilac:  '#c4b5fd',
+                  },
+                  fontFamily: {
+                    display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+                    sans:    ['Inter', 'system-ui', 'sans-serif'],
+                    mono:    ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+                  },
+                  boxShadow: {
+                    hard:    '4px 4px 0 0 #0a0a0a',
+                    'hard-sm':'2px 2px 0 0 #0a0a0a',
+                    'hard-lg':'6px 6px 0 0 #0a0a0a',
+                  },
+                }
+              }
+            }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .drag-over {
+            background: #fef7e8 !important;
+        }
+
+        .dragging {
+            opacity: 0.5;
+            transform: rotate(2deg);
+        }
+
+        details > summary {
+            cursor: pointer;
+            list-style: none;
+        }
+
+            details > summary::-webkit-details-marker {
+                display: none;
+            }
+
+        /* Neo-brutalist button */
+        .btn-brutal {
+            border: 2px solid #0a0a0a;
+            transition: transform .08s ease, box-shadow .08s ease;
+        }
+
+            .btn-brutal:hover {
+                transform: translate(-1px, -1px);
+                box-shadow: 5px 5px 0 0 #0a0a0a;
+            }
+
+            .btn-brutal:active {
+                transform: translate(2px, 2px);
+                box-shadow: 1px 1px 0 0 #0a0a0a;
+            }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 500;
+            border: 1.5px solid #0a0a0a;
+            background: #fff;
+        }
+
+        .pill-yel {
+            background: #fde047;
+        }
+
+        .pill-pink {
+            background: #f0abfc;
+        }
+
+        .pill-mint {
+            background: #86efac;
+        }
+
+        .pill-coral {
+            background: #fb7185;
+            color: #fff;
+        }
+
+        .pill-sky {
+            background: #7dd3fc;
+        }
+
+        .pill-lilac {
+            background: #c4b5fd;
+        }
+
+        .pill-ink {
+            background: #0a0a0a;
+            color: #fff;
+        }
+
+        .toast {
+            animation: slide-in .25s ease-out;
+        }
+
+        @keyframes slide-in {
+            from {
+                transform: translateY(8px);
+                opacity: 0;
+            }
+
+            to {
+                transform: none;
+                opacity: 1;
+            }
+        }
+
+        kbd {
+            background: #fff;
+            border: 1.5px solid #0a0a0a;
+            border-bottom-width: 3px;
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .card-brutal {
+            background: #fff;
+            border: 2px solid #0a0a0a;
+            box-shadow: 4px 4px 0 0 #0a0a0a;
+        }
+
+        .status-marker {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* Inputs brutal style */
+        input.brutal, select.brutal, textarea.brutal {
+            background: #fff;
+            border: 2px solid #0a0a0a;
+            transition: box-shadow .1s ease;
+        }
+
+            input.brutal:focus, select.brutal:focus, textarea.brutal:focus {
+                outline: none;
+                box-shadow: 4px 4px 0 0 #0a0a0a;
+            }
+
+        .overdue-marker {
+            background: #fb7185;
+            color: #fff;
+            border: 1.5px solid #0a0a0a;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+    </style>
+</head>
+<body class="bg-cream text-ink min-h-screen">
+    <div class="max-w-7xl mx-auto p-6 md:p-10">
+
+        <!-- Header -->
+        <header class="flex flex-wrap items-end justify-between gap-4 mb-8">
+            <div>
+                <div class="inline-block bg-yel border-2 border-ink shadow-hard-sm px-3 py-1 text-xs font-mono font-medium uppercase tracking-wider mb-3">
+                    v1.0 · Minimal API + JSON
+                </div>
+                <h1 class="font-display font-bold text-5xl md:text-6xl tracking-tight leading-none">
+                    Task Tracker
+                </h1>
+                <p class="text-ink/60 mt-2 max-w-md">
+                    A list of things, with statuses, that survives a restart.
+                </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button id="modeList" class="btn-brutal bg-paper px-4 py-2 rounded-lg font-medium shadow-hard-sm">List <kbd>1</kbd></button>
+                <button id="modeKanban" class="btn-brutal bg-paper px-4 py-2 rounded-lg font-medium shadow-hard-sm">Kanban <kbd>2</kbd></button>
+                <button id="openCreate" class="btn-brutal bg-yel px-5 py-2 rounded-lg font-medium shadow-hard">+ New Task <kbd>N</kbd></button>
+            </div>
+        </header>
+
+        <!-- Stats bar -->
+        <section id="statsBar" class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-8"></section>
+
+        <!-- Filters -->
+        <section class="card-brutal rounded-xl p-5 mb-8">
+            <details open>
+                <summary class="flex items-center justify-between">
+                    <span class="font-display font-bold text-xl">Filters</span>
+                    <span class="text-xs font-mono text-ink/50">optional</span>
+                </summary>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4">
+                    <select id="fStatus" class="brutal rounded-lg px-3 py-2 text-sm">
+                        <option value="">Any status</option>
+                        <option value="todo">Todo</option>
+                        <option value="inProgress">In Progress</option>
+                        <option value="done">Done</option>
+                    </select>
+                    <select id="fPriority" class="brutal rounded-lg px-3 py-2 text-sm">
+                        <option value="">Any priority</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                    <select id="fTag" class="brutal rounded-lg px-3 py-2 text-sm">
+                        <option value="">Any tag</option>
+                    </select>
+                    <input id="fQuery" placeholder="Search title/desc...  ( / )"
+                           class="brutal rounded-lg px-3 py-2 text-sm" />
+                    <select id="fView" class="brutal rounded-lg px-3 py-2 text-sm">
+                        <option value="">Default view</option>
+                        <option value="today">Today</option>
+                        <option value="done-this-week">Done this week</option>
+                    </select>
+                </div>
+                <div class="mt-4 flex gap-2">
+                    <button id="applyFilters" class="btn-brutal bg-ink text-paper px-4 py-2 rounded-lg text-sm font-medium shadow-hard-sm">Apply</button>
+                    <button id="resetFilters" class="btn-brutal bg-paper px-4 py-2 rounded-lg text-sm font-medium shadow-hard-sm">Reset</button>
+                </div>
+            </details>
+        </section>
+
+        <!-- List view -->
+        <div id="listView">
+            <ul id="list" class="space-y-3"></ul>
+        </div>
+
+        <!-- Kanban view -->
+        <div id="kanbanView" class="hidden">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div data-status="todo" class="kanban-col card-brutal rounded-xl p-4 min-h-[400px]">
+                    <div class="flex items-center gap-2 mb-4 pb-3 border-b-2 border-ink">
+                        <span class="w-3 h-3 rounded-sm bg-yel border-2 border-ink"></span>
+                        <h3 class="font-display font-bold text-lg">Todo</h3>
+                        <span id="countTodo" class="ml-auto font-mono text-sm font-medium text-ink/60"></span>
+                    </div>
+                    <div class="kanban-drop space-y-3 min-h-[300px] p-1"></div>
+                </div>
+                <div data-status="inProgress" class="kanban-col card-brutal rounded-xl p-4 min-h-[400px]">
+                    <div class="flex items-center gap-2 mb-4 pb-3 border-b-2 border-ink">
+                        <span class="w-3 h-3 rounded-sm bg-pink border-2 border-ink"></span>
+                        <h3 class="font-display font-bold text-lg">In Progress</h3>
+                        <span id="countInProgress" class="ml-auto font-mono text-sm font-medium text-ink/60"></span>
+                    </div>
+                    <div class="kanban-drop space-y-3 min-h-[300px] p-1"></div>
+                </div>
+                <div data-status="done" class="kanban-col card-brutal rounded-xl p-4 min-h-[400px]">
+                    <div class="flex items-center gap-2 mb-4 pb-3 border-b-2 border-ink">
+                        <span class="w-3 h-3 rounded-sm bg-mint border-2 border-ink"></span>
+                        <h3 class="font-display font-bold text-lg">Done</h3>
+                        <span id="countDone" class="ml-auto font-mono text-sm font-medium text-ink/60"></span>
+                    </div>
+                    <div class="kanban-drop space-y-3 min-h-[300px] p-1"></div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="mt-10 text-center text-xs text-ink/50 font-mono">
+            <kbd>N</kbd> new task · <kbd>/</kbd> search · <kbd>1</kbd>/<kbd>2</kbd> switch view · <kbd>Esc</kbd> close
+        </footer>
+    </div>
+
+    <!-- Create / Edit modal -->
+    <div id="modal" class="fixed inset-0 bg-ink/40 hidden items-center justify-center z-50 p-4">
+        <div class="card-brutal rounded-xl w-full max-w-lg p-6 max-h-[90vh] overflow-auto bg-cream">
+            <h2 id="modalTitle" class="font-display font-bold text-2xl mb-5">New Task</h2>
+            <form id="taskForm" class="space-y-4">
+                <input type="hidden" id="taskId" />
+                <div>
+                    <label class="block text-xs font-mono font-medium uppercase tracking-wider mb-2">Title *</label>
+                    <input id="title" required maxlength="160"
+                           class="brutal w-full rounded-lg px-3 py-2.5" />
+                </div>
+                <div>
+                    <label class="block text-xs font-mono font-medium uppercase tracking-wider mb-2">Description</label>
+                    <textarea id="description" rows="3" maxlength="2000"
+                              class="brutal w-full rounded-lg px-3 py-2.5"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-mono font-medium uppercase tracking-wider mb-2">Priority</label>
+                        <select id="priority" class="brutal w-full rounded-lg px-3 py-2.5">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono font-medium uppercase tracking-wider mb-2">Deadline</label>
+                        <input id="deadline" type="date" class="brutal w-full rounded-lg px-3 py-2.5" />
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-mono font-medium uppercase tracking-wider mb-2">Tags (comma separated)</label>
+                    <input id="tags" placeholder="work, urgent, home"
+                           class="brutal w-full rounded-lg px-3 py-2.5" />
+                </div>
+
+                <div id="historySection" class="hidden">
+                    <label class="block text-xs font-mono font-medium uppercase tracking-wider mb-2">Status history</label>
+                    <ul id="historyList" class="text-xs text-ink/70 space-y-1 max-h-32 overflow-auto bg-paper rounded-lg border-2 border-ink p-3 font-mono"></ul>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" id="cancelBtn" class="btn-brutal bg-paper px-4 py-2 rounded-lg font-medium shadow-hard-sm">Cancel</button>
+                    <button type="submit" class="btn-brutal bg-ink text-paper px-5 py-2 rounded-lg font-medium shadow-hard">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-ink/40 hidden items-center justify-center z-50 p-4">
+        <div class="card-brutal rounded-xl w-full max-w-sm p-6 text-center bg-cream">
+            <div class="w-14 h-14 rounded-full bg-coral border-2 border-ink mx-auto mb-4 flex items-center justify-center shadow-hard-sm">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                    <path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                </svg>
+            </div>
+            <p id="confirmText" class="mb-5 font-display font-bold text-lg"></p>
+            <div class="flex justify-center gap-2">
+                <button id="confirmNo" class="btn-brutal bg-paper px-4 py-2 rounded-lg font-medium shadow-hard-sm">Cancel</button>
+                <button id="confirmYes" class="btn-brutal bg-coral text-paper px-4 py-2 rounded-lg font-medium shadow-hard">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toasts -->
+    <div id="toasts" class="fixed bottom-4 right-4 z-[60] space-y-2"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
