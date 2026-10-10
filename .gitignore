@@ -49,3 +49,4 @@ coverage*.xml
 # ---------- Local secrets (if ever added) ----------
 appsettings.Local.json
 *.pfx
+data/
